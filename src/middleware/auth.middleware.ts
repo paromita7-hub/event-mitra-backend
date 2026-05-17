@@ -30,7 +30,12 @@ export const requireAuth = async (
       return;
     }
 
-    req.user = user;
+    const normalizedUser: AuthenticatedUser = {
+      ...user,
+      _id: String(user._id),
+    };
+
+    req.user = normalizedUser;
     next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {

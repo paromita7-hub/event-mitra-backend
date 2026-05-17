@@ -10,6 +10,24 @@ import { calculateCommission } from "../utils/commission.utils";
 import { createNotification } from "../utils/notification.utils";
 import { buildPaginationMeta, parsePaginationParams } from "../utils/pagination.utils";
 
+const normalizeId = (value: unknown): string => {
+  if (value == null) return "";
+  if (typeof value === "string" || typeof value === "number") return String(value);
+
+  if (typeof value === "object") {
+    const objectValue = value as { _id?: unknown; _bsontype?: string };
+    if (objectValue._bsontype === "ObjectId") return String(value);
+    if ("_id" in objectValue && objectValue._id !== value) {
+      return normalizeId(objectValue._id);
+    }
+  }
+
+  return String(value);
+};
+
+const isSameId = (left: unknown, right: unknown): boolean =>
+  normalizeId(left) === normalizeId(right);
+
 export const purchaseTicket = asyncHandler(async (req: Request, res: Response) => {
   const { eventId, ticketTypeIndex, quantity } = req.body as {
     eventId: string;
@@ -159,7 +177,7 @@ export const getTicketById = asyncHandler(async (req: Request, res: Response) =>
   if (!ticket) {
     throw new ApiError(404, "Ticket not found");
   }
-  if (String(ticket.customer) !== req.user!._id) {
+  if (!isSameId(ticket.customer, req.user!._id)) {
     throw new ApiError(403, "Access denied");
   }
 

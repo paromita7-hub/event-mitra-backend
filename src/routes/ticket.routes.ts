@@ -14,7 +14,7 @@ const router = Router();
 
 router.use(requireAuth);
 router.post("/purchase", requireRole("customer"), validate(purchaseTicketSchema), purchaseTicket);
-router.get("/my-tickets", requireRole("customer"), getMyTickets);
+router.get("/my-tickets", requireRole(["customer", "organizer"]), getMyTickets);
 router.get("/:id", getTicketById);
 router.patch("/:id/cancel", requireRole("customer"), cancelTicket);
 

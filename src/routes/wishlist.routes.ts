@@ -9,7 +9,7 @@ import { requireRole } from "../middleware/role.middleware";
 
 const router = Router();
 
-router.use(requireAuth, requireRole("customer"));
+router.use(requireAuth, requireRole(["customer", "organizer"]));
 router.get("/", getWishlist);
 router.post("/venue/:venueId", toggleVenueWishlist);
 router.post("/event/:eventId", toggleEventWishlist);

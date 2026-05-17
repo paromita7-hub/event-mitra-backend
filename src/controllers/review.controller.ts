@@ -23,9 +23,13 @@ export const createReview = asyncHandler(async (req: Request, res: Response) => 
   const existingReview = await Review.findOne({
     customer: req.user!._id,
     ...(entityType === "venue" ? { venue: entityId } : { publicEvent: entityId }),
-  }).lean();
+  });
   if (existingReview) {
-    throw new ApiError(409, "You have already reviewed this entity");
+    existingReview.rating = rating;
+    existingReview.text = text;
+    await existingReview.save();
+    res.json(ApiResponse.success({ review: existingReview }, "Review updated successfully"));
+    return;
   }
 
   if (entityType === "venue") {

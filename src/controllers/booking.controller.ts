@@ -11,6 +11,24 @@ import { createNotification } from "../utils/notification.utils";
 import { buildPaginationMeta, parsePaginationParams } from "../utils/pagination.utils";
 import { sameDay, toDayStart } from "../utils/model.utils";
 
+const normalizeId = (value: unknown): string => {
+  if (value == null) return "";
+  if (typeof value === "string" || typeof value === "number") return String(value);
+
+  if (typeof value === "object") {
+    const objectValue = value as { _id?: unknown; _bsontype?: string };
+    if (objectValue._bsontype === "ObjectId") return String(value);
+    if ("_id" in objectValue && objectValue._id !== value) {
+      return normalizeId(objectValue._id);
+    }
+  }
+
+  return String(value);
+};
+
+const isSameId = (left: unknown, right: unknown): boolean =>
+  normalizeId(left) === normalizeId(right);
+
 const removeDate = (dates: Date[], targetDate: Date): Date[] =>
   dates.filter((date) => !sameDay(date, targetDate));
 
@@ -162,13 +180,8 @@ export const getBookingById = asyncHandler(async (req: Request, res: Response) =
     throw new ApiError(404, "Booking not found");
   }
 
-  const customerId =
-    typeof booking.customer === "string" ? booking.customer : booking.customer._id;
-  const organizerId =
-    typeof booking.organizer === "string" ? booking.organizer : booking.organizer._id;
-
-  const isCustomer = req.user!.role === "customer" && String(customerId) === req.user!._id;
-  const isOrganizer = req.user!.role === "organizer" && String(organizerId) === req.user!._id;
+  const isCustomer = req.user!.role === "customer" && isSameId(booking.customer, req.user!._id);
+  const isOrganizer = req.user!.role === "organizer" && isSameId(booking.organizer, req.user!._id);
   if (!isCustomer && !isOrganizer) {
     throw new ApiError(403, "Access denied");
   }

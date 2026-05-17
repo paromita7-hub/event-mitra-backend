@@ -22,7 +22,7 @@ const router = Router();
 
 router.use(requireAuth);
 router.post("/", requireRole("customer"), validate(createBookingSchema), createBooking);
-router.get("/my-bookings", requireRole("customer"), getMyBookings);
+router.get("/my-bookings", requireRole(["customer", "organizer"]), getMyBookings);
 router.get("/organizer/all", requireRole("organizer"), getOrganizerBookings);
 router.get("/:id", getBookingById);
 router.patch("/:id/confirm", requireRole("organizer"), confirmBooking);

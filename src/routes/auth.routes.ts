@@ -10,7 +10,12 @@ import {
   verifyOtpController,
 } from "../controllers/auth.controller";
 import { requireAuth } from "../middleware/auth.middleware";
-import { authRateLimit, otpRateLimit } from "../middleware/rateLimit.middleware";
+import {
+  authRateLimit,
+  loginRateLimit,
+  otpRateLimit,
+  refreshTokenRateLimit,
+} from "../middleware/rateLimit.middleware";
 import { validate } from "../middleware/validate.middleware";
 import {
   forgotPasswordSchema,
@@ -27,8 +32,8 @@ const router = Router();
 router.post("/register", authRateLimit, validate(registerSchema), register);
 router.post("/verify-otp", otpRateLimit, validate(verifyOtpSchema), verifyOtpController);
 router.post("/resend-otp", otpRateLimit, validate(resendOtpSchema), resendOtp);
-router.post("/login", authRateLimit, validate(loginSchema), login);
-router.post("/refresh-token", authRateLimit, validate(refreshTokenSchema), refreshToken);
+router.post("/login", loginRateLimit, validate(loginSchema), login);
+router.post("/refresh-token", refreshTokenRateLimit, validate(refreshTokenSchema), refreshToken);
 router.post("/logout", requireAuth, validate(refreshTokenSchema), logout);
 router.post("/forgot-password", otpRateLimit, validate(forgotPasswordSchema), forgotPassword);
 router.post("/reset-password", authRateLimit, validate(resetPasswordSchema), resetPassword);
