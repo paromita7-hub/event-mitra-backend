@@ -17,6 +17,9 @@ const payoutSchema = new Schema(
       default: "upcoming",
     },
     paidAt: { type: Date },
+    transactionId: { type: String, trim: true },
+    processedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    markedPaidBy: { type: Schema.Types.ObjectId, ref: "User" },
     bankSnapshot: {
       bankName: { type: String, trim: true },
       last4: { type: String, trim: true },

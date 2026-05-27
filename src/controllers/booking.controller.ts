@@ -6,7 +6,7 @@ import Venue from "../models/Venue";
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import { asyncHandler } from "../utils/asyncHandler";
-import { calculateCommission } from "../utils/commission.utils";
+import { calculateCommissionForOrganizer } from "../utils/commission.utils";
 import { createNotification } from "../utils/notification.utils";
 import { buildPaginationMeta, parsePaginationParams } from "../utils/pagination.utils";
 import { sameDay, toDayStart } from "../utils/model.utils";
@@ -82,7 +82,7 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
     throw new ApiError(400, "Date does not meet minimum advance booking policy");
   }
 
-  const pricing = calculateCommission(venue.pricePerEvent);
+  const pricing = await calculateCommissionForOrganizer(venue.pricePerEvent, String(venue.organizer));
   const paymentStatus = advanceAmount >= pricing.gross ? "paid" : advanceAmount > 0 ? "partial" : "pending";
   const booking = await Booking.create({
     customer: req.user!._id,

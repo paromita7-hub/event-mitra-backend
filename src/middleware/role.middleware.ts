@@ -1,8 +1,10 @@
 import type { NextFunction, Request, Response } from "express";
 import { ApiResponse } from "../utils/ApiResponse";
 
+type AllowedRole = "customer" | "organizer" | "admin";
+
 export const requireRole =
-  (role: "customer" | "organizer" | ("customer" | "organizer")[]) =>
+  (role: AllowedRole | AllowedRole[]) =>
   (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(403).json(ApiResponse.error("Access denied", 403));
@@ -10,7 +12,7 @@ export const requireRole =
     }
 
     const allowedRoles = Array.isArray(role) ? role : [role];
-    if (!allowedRoles.includes(req.user.role)) {
+    if (!allowedRoles.includes(req.user.role as AllowedRole)) {
       res.status(403).json(ApiResponse.error("Access denied", 403));
       return;
     }

@@ -6,7 +6,7 @@ import OrganizerProfile from "../models/OrganizerProfile";
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import { asyncHandler } from "../utils/asyncHandler";
-import { calculateCommission } from "../utils/commission.utils";
+import { calculateCommissionForOrganizer } from "../utils/commission.utils";
 import { createNotification } from "../utils/notification.utils";
 import { buildPaginationMeta, parsePaginationParams } from "../utils/pagination.utils";
 
@@ -60,7 +60,7 @@ export const purchaseTicket = asyncHandler(async (req: Request, res: Response) =
   }
 
   const totalAmount = ticketType.price * quantity;
-  const commission = calculateCommission(totalAmount);
+  const commission = await calculateCommissionForOrganizer(totalAmount, String(event.organizer));
   const soldSeatsPath = `ticketTypes.${ticketTypeIndex}.soldSeats`;
   const updatedEvent = await PublicEvent.findOneAndUpdate(
     {

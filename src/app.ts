@@ -19,10 +19,14 @@ import notificationRoutes from "./routes/notification.routes";
 import payoutRoutes from "./routes/payout.routes";
 import searchRoutes from "./routes/search.routes";
 import analyticsRoutes from "./routes/analytics.routes";
+import adminRoutes from "./routes/admin.routes";
+import { getPublicStatus } from "./controllers/status.controller";
 
 dotenv.config();
 
 const app = express();
+
+app.set("trust proxy", 1);
 
 app.use(helmet());
 app.use(
@@ -39,6 +43,8 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+app.get("/api/v1/status", getPublicStatus);
+
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/organizer", organizerRoutes);
@@ -53,6 +59,7 @@ app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/payouts", payoutRoutes);
 app.use("/api/v1/search", searchRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
+app.use("/api/v1/admin", adminRoutes);
 
 app.use(errorHandler);
 

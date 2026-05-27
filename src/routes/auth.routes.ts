@@ -9,6 +9,7 @@ import {
   resetPassword,
   verifyOtpController,
 } from "../controllers/auth.controller";
+import { adminLogin } from "../controllers/admin.controller";
 import { requireAuth } from "../middleware/auth.middleware";
 import {
   authRateLimit,
@@ -33,6 +34,7 @@ router.post("/register", authRateLimit, validate(registerSchema), register);
 router.post("/verify-otp", otpRateLimit, validate(verifyOtpSchema), verifyOtpController);
 router.post("/resend-otp", otpRateLimit, validate(resendOtpSchema), resendOtp);
 router.post("/login", loginRateLimit, validate(loginSchema), login);
+router.post("/admin-login", loginRateLimit, adminLogin);
 router.post("/refresh-token", refreshTokenRateLimit, validate(refreshTokenSchema), refreshToken);
 router.post("/logout", requireAuth, validate(refreshTokenSchema), logout);
 router.post("/forgot-password", otpRateLimit, validate(forgotPasswordSchema), forgotPassword);

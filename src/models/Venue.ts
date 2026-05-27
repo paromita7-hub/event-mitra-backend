@@ -28,11 +28,15 @@ const venueSchema = new Schema(
     totalRevenue: { type: Number, default: 0 },
     status: {
       type: String,
-      enum: ["active", "inactive", "under_review"],
+      enum: ["active", "inactive", "under_review", "rejected"],
       default: "under_review",
     },
     isTopPick: { type: Boolean, default: false },
     isFeatured: { type: Boolean, default: false },
+    rejectionReason: { type: String, trim: true },
+    adminNotes: { type: String, trim: true },
+    approvedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    approvedAt: { type: Date },
     availability: {
       blockedDates: { type: [Date], default: [] },
       bookedDates: { type: [Date], default: [] },

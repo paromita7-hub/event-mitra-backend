@@ -1,6 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import PublicEvent from "./PublicEvent";
-import Venue from "./Venue";
+import { recalculateEntityRating } from "../utils/ratingUtils";
 
 const reviewSchema = new Schema(
   {
@@ -18,48 +17,22 @@ const reviewSchema = new Schema(
       repliedAt: { type: Date },
     },
     isVerified: { type: Boolean, default: true },
+    isRemoved: { type: Boolean, default: false },
+    removedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    removedAt: { type: Date },
+    removalReason: { type: String, trim: true },
   },
   { timestamps: true },
 );
 
-const recalculateRatings = async (doc: {
-  entityType: string;
-  venue?: mongoose.Types.ObjectId | null;
-  publicEvent?: mongoose.Types.ObjectId | null;
-}): Promise<void> => {
-  if (doc.entityType === "venue" && doc.venue) {
-    const stats = await Review.aggregate<{ _id: null; avgRating: number; count: number }>([
-      { $match: { venue: doc.venue } },
-      { $group: { _id: null, avgRating: { $avg: "$rating" }, count: { $sum: 1 } } },
-    ]);
-
-    const summary = stats[0] ?? { avgRating: 0, count: 0 };
-    await Venue.findByIdAndUpdate(doc.venue, {
-      $set: {
-        rating: Number(summary.avgRating.toFixed(1)),
-        reviewCount: summary.count,
-      },
-    });
-  }
-
-  if (doc.entityType === "event" && doc.publicEvent) {
-    const stats = await Review.aggregate<{ _id: null; avgRating: number; count: number }>([
-      { $match: { publicEvent: doc.publicEvent } },
-      { $group: { _id: null, avgRating: { $avg: "$rating" }, count: { $sum: 1 } } },
-    ]);
-
-    const summary = stats[0] ?? { avgRating: 0, count: 0 };
-    await PublicEvent.findByIdAndUpdate(doc.publicEvent, {
-      $set: {
-        rating: Number(summary.avgRating.toFixed(1)),
-        reviewCount: summary.count,
-      },
-    });
-  }
-};
-
 reviewSchema.post("save", async function postSave() {
-  await recalculateRatings(this);
+  if (this.isRemoved) return;
+  if (this.entityType === "venue" && this.venue) {
+    await recalculateEntityRating("venue", String(this.venue));
+  }
+  if (this.entityType === "event" && this.publicEvent) {
+    await recalculateEntityRating("event", String(this.publicEvent));
+  }
 });
 
 const Review = mongoose.models.Review || mongoose.model("Review", reviewSchema);

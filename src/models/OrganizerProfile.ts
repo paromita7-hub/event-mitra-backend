@@ -33,6 +33,9 @@ const organizerProfileSchema = new Schema(
     isVerified: { type: Boolean, default: false },
     isKYCSubmitted: { type: Boolean, default: false },
     isKYCApproved: { type: Boolean, default: false },
+    kycRejectionReason: { type: String, trim: true },
+    kycReviewedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    kycReviewedAt: { type: Date },
     kycDocuments: { type: [kycDocumentSchema], default: [] },
     bankAccount: {
       accountNumber: { type: String, select: false },
@@ -41,7 +44,7 @@ const organizerProfileSchema = new Schema(
       accountHolderName: { type: String, trim: true },
       last4: { type: String, trim: true },
     },
-    commissionRate: { type: Number, default: 12 },
+    commissionRate: { type: Number, min: 1, max: 50 },
     subscriptionPlan: { type: String, default: "Verified Partner" },
     joinedAt: { type: Date, default: Date.now },
   },

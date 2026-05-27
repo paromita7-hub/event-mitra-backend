@@ -100,7 +100,7 @@ export const createReview = asyncHandler(async (req: Request, res: Response) => 
 
 export const getVenueReviews = asyncHandler(async (req: Request, res: Response) => {
   const { page, limit, skip } = parsePaginationParams(req.query);
-  const filters = { venue: req.params.venueId };
+  const filters = { venue: req.params.venueId, isRemoved: { $ne: true } };
   const total = await Review.countDocuments(filters);
   const reviews = await Review.find(filters)
     .populate("customer", "firstName lastName city avatar")
@@ -121,7 +121,7 @@ export const getVenueReviews = asyncHandler(async (req: Request, res: Response) 
 
 export const getEventReviews = asyncHandler(async (req: Request, res: Response) => {
   const { page, limit, skip } = parsePaginationParams(req.query);
-  const filters = { publicEvent: req.params.eventId };
+  const filters = { publicEvent: req.params.eventId, isRemoved: { $ne: true } };
   const total = await Review.countDocuments(filters);
   const reviews = await Review.find(filters)
     .populate("customer", "firstName lastName city avatar")
@@ -142,7 +142,7 @@ export const getEventReviews = asyncHandler(async (req: Request, res: Response) 
 
 export const getOrganizerReviews = asyncHandler(async (req: Request, res: Response) => {
   const { page, limit, skip } = parsePaginationParams(req.query);
-  const filters: Record<string, unknown> = { organizer: req.user!._id };
+  const filters: Record<string, unknown> = { organizer: req.user!._id, isRemoved: { $ne: true } };
   if (req.query.rating) {
     filters.rating = Number(req.query.rating);
   }

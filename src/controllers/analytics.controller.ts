@@ -8,19 +8,15 @@ import Venue from "../models/Venue";
 import { PLATFORM_COMMISSION_RATE } from "../utils/commission.utils";
 import { ApiResponse } from "../utils/ApiResponse";
 import { asyncHandler } from "../utils/asyncHandler";
-
-const monthsBack = (count: number): Date[] => {
-  const result: Date[] = [];
-  const today = new Date();
-  for (let index = count - 1; index >= 0; index -= 1) {
-    result.push(new Date(today.getFullYear(), today.getMonth() - index, 1));
-  }
-  return result;
-};
-
-const monthKey = (date: Date): string => `${date.getFullYear()}-${date.getMonth()}`;
-const monthLabel = (date: Date): string =>
-  date.toLocaleDateString("en-IN", { month: "short" });
+import {
+  ANALYTICS_PERIOD_MAP,
+  getPeriodStart,
+  isOnOrAfter,
+  monthKey,
+  monthLabel,
+  monthsBack,
+  parseAnalyticsPeriod,
+} from "../utils/analyticsPeriod.utils";
 
 export const getDashboard = asyncHandler(async (req: Request, res: Response) => {
   const organizerId = req.user!._id;
@@ -83,9 +79,9 @@ export const getDashboard = asyncHandler(async (req: Request, res: Response) => 
 
 export const getAnalytics = asyncHandler(async (req: Request, res: Response) => {
   const organizerId = req.user!._id;
-  const periodMap = { "3m": 3, "6m": 6, "12m": 12 } as const;
-  const selectedPeriod = (req.query.period as keyof typeof periodMap) || "6m";
-  const monthsCount = periodMap[selectedPeriod] ?? 6;
+  const period = parseAnalyticsPeriod(req.query.period as string | undefined);
+  const monthsCount = ANALYTICS_PERIOD_MAP[period];
+  const periodStart = getPeriodStart(monthsCount);
 
   const [bookings, venues, reviews, tickets] = await Promise.all([
     Booking.find({ organizer: organizerId }).lean(),
@@ -94,14 +90,19 @@ export const getAnalytics = asyncHandler(async (req: Request, res: Response) => 
     Ticket.find({ organizer: organizerId }).lean(),
   ]);
 
+  const periodBookings = bookings.filter((booking) => isOnOrAfter(booking.createdAt, periodStart));
+  const periodTickets = tickets.filter(
+    (ticket) => ticket.status !== "cancelled" && isOnOrAfter(ticket.createdAt, periodStart),
+  );
+
   const buckets = monthsBack(monthsCount).map((month) => ({
     month,
     key: monthKey(month),
   }));
 
   const revenueByMonth = buckets.map(({ month, key }) => {
-    const monthBookings = bookings.filter((booking) => monthKey(new Date(booking.createdAt)) === key);
-    const monthTickets = tickets.filter((ticket) => monthKey(new Date(ticket.createdAt)) === key);
+    const monthBookings = periodBookings.filter((booking) => monthKey(new Date(booking.createdAt)) === key);
+    const monthTickets = periodTickets.filter((ticket) => monthKey(new Date(ticket.createdAt)) === key);
     const revenue =
       monthBookings.reduce((sum, booking) => sum + booking.pricing.totalAmount, 0) +
       monthTickets.reduce((sum, ticket) => sum + ticket.totalAmount, 0);
@@ -115,14 +116,14 @@ export const getAnalytics = asyncHandler(async (req: Request, res: Response) => 
   });
 
   const totalRevenue = revenueByMonth.reduce((sum, item) => sum + item.revenue, 0);
-  const totalBookings = bookings.length;
+  const totalBookings = periodBookings.length + periodTickets.length;
   const commissionPaid = Math.round(totalRevenue * PLATFORM_COMMISSION_RATE);
   const avgRating =
     reviews.length > 0 ? Number((reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)) : 0;
 
   const venueStats = venues
     .map((venue) => {
-      const venueBookings = bookings.filter((booking) => String(booking.venue) === String(venue._id));
+      const venueBookings = periodBookings.filter((booking) => String(booking.venue) === String(venue._id));
       const revenue = venueBookings.reduce((sum, booking) => sum + booking.pricing.totalAmount, 0);
       return {
         venue,
@@ -139,7 +140,7 @@ export const getAnalytics = asyncHandler(async (req: Request, res: Response) => 
     count: bookingCount,
   }));
 
-  const eventTypeRevenue = bookings.reduce<Record<string, number>>((acc, booking) => {
+  const eventTypeRevenue = periodBookings.reduce<Record<string, number>>((acc, booking) => {
     acc[booking.eventType] = (acc[booking.eventType] ?? 0) + booking.pricing.totalAmount;
     return acc;
   }, {});
@@ -149,7 +150,7 @@ export const getAnalytics = asyncHandler(async (req: Request, res: Response) => 
     revenue,
   }));
 
-  const confirmedBookings = bookings.filter((booking) => ["confirmed", "completed"].includes(booking.status));
+  const confirmedBookings = periodBookings.filter((booking) => ["confirmed", "completed"].includes(booking.status));
   const repeatRate = confirmedBookings.length
     ? Number(
         (

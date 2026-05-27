@@ -17,6 +17,7 @@ import { seedVenues } from "./venues.seed";
 import { seedEvents } from "./events.seed";
 import { seedBookings } from "./bookings.seed";
 import { seedReviews } from "./reviews.seed";
+import { seedAdmin } from "./admin.seed";
 
 dotenv.config();
 
@@ -47,7 +48,8 @@ const run = async (): Promise<void> => {
     email: { $in: requiredSeedEmails },
   });
   if (existingSeedUsers === requiredSeedEmails.length && process.env.FORCE_SEED !== "true") {
-    console.log("✓ Seed data already present. Skipping reseed.");
+    await seedAdmin();
+    console.log("✓ Seed data already present. Admin extras upserted.");
     process.exit(0);
   }
 
@@ -55,6 +57,9 @@ const run = async (): Promise<void> => {
 
   await seedUsers();
   console.log("✓ Users seeded");
+
+  await seedAdmin();
+  console.log("✓ Admin user seeded");
 
   await seedVenues();
   console.log("✓ Venues seeded");
